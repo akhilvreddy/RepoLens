@@ -1,0 +1,14 @@
+/.venv/
+/backend/__pycache__/
+/backend/*.pyc
+/backend/repolens.db
+/backend/.pytest_cache/
+/backend/.ruff_cache/
+/backend/.mypy_cache/
+/backend/.env
+/frontend/.next/
+/frontend/node_modules/
+/frontend/.env.local
+/frontend/.DS_Store
+/node_modules/
+/dist/
