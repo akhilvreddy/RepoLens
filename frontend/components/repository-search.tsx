@@ -3,7 +3,6 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Github, Loader2 } from "lucide-react";
-import { analyzeRepository } from "@/lib/api";
 import { validateGitHubUrl } from "@/lib/utils";
 import { ErrorState } from "@/components/error-state";
 
@@ -15,7 +14,7 @@ export function RepositorySearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     if (!validateGitHubUrl(url)) {
@@ -23,14 +22,7 @@ export function RepositorySearch() {
       return;
     }
     setIsLoading(true);
-    try {
-      const analysis = await analyzeRepository(url);
-      router.push(`/repositories/${analysis.repository.owner}/${analysis.repository.name}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Repository analysis failed.");
-    } finally {
-      setIsLoading(false);
-    }
+    router.push(`/analyze?url=${encodeURIComponent(url.trim())}`);
   }
 
   return (

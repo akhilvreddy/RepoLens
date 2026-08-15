@@ -18,10 +18,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function analyzeRepository(url: string, forceRefresh = false) {
+export function analyzeRepository(url: string, forceRefresh = false, init?: RequestInit) {
   return request<RepositoryAnalysis>("/api/repositories/analyze", {
     method: "POST",
     body: JSON.stringify({ url, force_refresh: forceRefresh }),
+    ...init,
   });
 }
 

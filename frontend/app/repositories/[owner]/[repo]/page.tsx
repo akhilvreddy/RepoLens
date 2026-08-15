@@ -12,6 +12,7 @@ import { RepositoryTree } from "@/components/repository-tree";
 import { LoadingState } from "@/components/loading-state";
 import { ErrorState } from "@/components/error-state";
 import { MetricChartFallback } from "@/components/metric-fallback";
+import { ReanalyzeButton } from "@/components/reanalyze-button";
 import { formatDate } from "@/lib/utils";
 import type { RepositoryAnalysis } from "@/lib/types";
 
@@ -35,7 +36,13 @@ export default async function RepositoryPage({
   }
 
   if (error) {
-    return <div className="mx-auto flex min-h-screen max-w-7xl items-start px-4 pt-8 sm:px-6 lg:px-8"><ErrorState message={error} /></div>;
+    return (
+      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl">
+          <ErrorState message={error} />
+        </div>
+      </div>
+    );
   }
 
   if (!analysis) {
@@ -71,6 +78,9 @@ export default async function RepositoryPage({
             <SnapshotRow label="Contributor coverage" value={`${analysis.metrics.active_contributors} active`} />
             <SnapshotRow label="CI detected" value={analysis.metrics.has_ci ? "Yes" : "No"} />
             <SnapshotRow label="Tests detected" value={analysis.metrics.has_tests ? "Yes" : "No"} />
+            <div className="mt-4">
+              <ReanalyzeButton repositoryUrl={analysis.repository.github_url} />
+            </div>
           </div>
           <HealthScoreCard scores={analysis.metrics.scores} />
           <RepositoryChat owner={analysis.repository.owner} repo={analysis.repository.name} />
