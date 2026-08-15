@@ -30,7 +30,6 @@ uvicorn app.main:app --reload
 
 - `GITHUB_TOKEN` optional for authenticated GitHub API calls.
 - `OPENAI_API_KEY` optional for AI summary/chat calls. If absent, deterministic fallback still works.
-- `ANALYSIS_CACHE_TTL_SECONDS` is ignored in stateless mode.
 
 ## API Surface
 
@@ -52,5 +51,5 @@ uvicorn app.main:app --reload
 ## Future Improvements
 
 - queue-backed analysis jobs,
-- vector index persistence outside SQLite,
+- optional external vector storage,
 - richer AST-aware file intelligence.

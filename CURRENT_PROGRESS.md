@@ -22,7 +22,7 @@ Current status (as built in this round):
   - technology detection
   - OpenAI overview + repository chat with fallback behavior
   - chunking and embedding/retrieval plumbing
-- persistence models for repositories, analyses, file chunks, chat sessions/messages
+- stateless analysis and request-scoped chat retrieval (no persisted cache or sessions)
 - REST routes for analyze/get/chat sub-routes
 
 3) Infra and docs

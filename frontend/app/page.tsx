@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookText, Database, Layers, Sparkles } from "lucide-react";
+import { BookText, Layers, Sparkles, Zap } from "lucide-react";
 import { RepositorySearch } from "@/components/repository-search";
 import type { ReactNode } from "react";
 
@@ -24,7 +24,7 @@ export default function HomePage() {
           <Feature title="Repository signals" icon={<BookText className="h-4 w-4" />} items={["Metadata, stars, forks, watchers", "Languages and dependencies", "CI, docs, and test detection"]} />
           <Feature title="Engineering metrics" icon={<Layers className="h-4 w-4" />} items={["Commit momentum", "Contributor concentration", "Issue & PR staleness", "Release health and activity"]} />
           <Feature title="AI-guided interpretation" icon={<Sparkles className="h-4 w-4" />} items={["Deterministic data first", "Structured AI overview", "Source-grounded repository chat"]} />
-          <Feature title="Persistence" icon={<Database className="h-4 w-4" />} items={["SQLite cache", "Analysis refresh", "Repository file chunking"]} />
+          <Feature title="Stateless flow" icon={<Zap className="h-4 w-4" />} items={["Fresh analysis per request", "No server-side cache", "Request-scoped repository chunking"]} />
         </div>
       </section>
 

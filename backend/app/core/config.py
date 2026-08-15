@@ -7,7 +7,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "RepoLens API"
     environment: str = "development"
-    database_url: str = "sqlite:///./repolens.db"
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
 
     github_token: str | None = None
@@ -19,8 +18,6 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
-
-    analysis_cache_ttl_seconds: int = 3600
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
