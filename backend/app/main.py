@@ -8,13 +8,11 @@ from app.api.routes import chat, repositories
 from app.core.config import get_settings
 from app.core.exceptions import RepoLensError
 from app.core.logging import configure_logging
-from app.db.base import create_db_and_tables
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging()
-    create_db_and_tables()
     yield
 
 

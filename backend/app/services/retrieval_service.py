@@ -1,9 +1,7 @@
 import math
 from dataclasses import dataclass
+from typing import Any
 
-from sqlalchemy.orm import Session
-
-from app.db.models import RepositoryFileChunk
 from app.schemas.chat import SourceReference
 from app.services.embedding_service import EmbeddingService
 
@@ -19,17 +17,27 @@ class RetrievalService:
     def __init__(self, embedding_service: EmbeddingService):
         self.embedding_service = embedding_service
 
-    async def retrieve(self, db: Session, repository_id: int, question: str, limit: int = 6) -> list[RetrievedChunk]:
+    async def retrieve(self, question: str, chunks: list[dict[str, Any]], limit: int = 6) -> list[RetrievedChunk]:
+        if not chunks:
+            return []
         query_embedding = await self.embedding_service.embed(question)
-        chunks = db.query(RepositoryFileChunk).filter(RepositoryFileChunk.repository_id == repository_id).all()
-        ranked = [
-            RetrievedChunk(
-                content=chunk.content,
-                source=SourceReference(path=chunk.path, start_line=chunk.start_line, end_line=chunk.end_line),
-                score=self._cosine(query_embedding, chunk.embedding_json or []),
+        ranked: list[RetrievedChunk] = []
+        for chunk in chunks:
+            content = chunk.get("content", "")
+            if not content:
+                continue
+            chunk_embedding = await self.embedding_service.embed(content)
+            ranked.append(
+                RetrievedChunk(
+                    content=content,
+                    source=SourceReference(
+                        path=chunk.get("path", "unknown"),
+                        start_line=chunk.get("start_line", 1),
+                        end_line=chunk.get("end_line", 1),
+                    ),
+                    score=self._cosine(query_embedding, chunk_embedding),
+                )
             )
-            for chunk in chunks
-        ]
         return sorted(ranked, key=lambda item: item.score, reverse=True)[:limit]
 
     def _cosine(self, left: list[float], right: list[float]) -> float:

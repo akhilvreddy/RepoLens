@@ -1,12 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy.orm import Session
-
 from app.core.config import Settings
-from app.db.models import RepositoryAnalysis, RepositoryFileChunk
-from app.repositories.analysis_repository import AnalysisRepository
-from app.repositories.repository_repository import RepositoryRepository
 from app.schemas.analysis import (
     CommitSummary,
     ContributorSummary,
@@ -17,13 +12,11 @@ from app.schemas.analysis import (
     RepositoryFileSummary,
     RepositorySummary,
 )
-from app.services.embedding_service import EmbeddingService
 from app.services.github_service import GitHubService
 from app.services.metrics_service import MetricsService
 from app.services.openai_service import OpenAIService
 from app.services.technology_detection_service import TechnologyDetectionService
 from app.utils.github_url import parse_github_repo_url
-from app.utils.text_chunking import chunk_text
 
 
 class RepositoryAnalysisService:
@@ -33,19 +26,17 @@ class RepositoryAnalysisService:
         self.metrics = MetricsService()
         self.tech = TechnologyDetectionService()
         self.openai = OpenAIService(settings)
-        self.embeddings = EmbeddingService(settings)
-        self.repository_repo = RepositoryRepository()
-        self.analysis_repo = AnalysisRepository()
 
-    async def analyze(self, db: Session, url: str, force_refresh: bool = False) -> RepositoryAnalysisResponse:
+    async def analyze(self, url: str, force_refresh: bool = False) -> RepositoryAnalysisResponse:
+        _ = force_refresh
         ref = parse_github_repo_url(url)
-        existing_repo = self.repository_repo.get_by_owner_name(db, ref.owner, ref.repo)
-        if existing_repo and not force_refresh:
-            fresh = self.analysis_repo.get_fresh(db, existing_repo.id)
-            if fresh:
-                return self._response_from_analysis(fresh, cached=True)
+        return await self._build_response(ref.owner, ref.repo, ref.html_url)
 
-        bundle = await self.github.fetch_repository_bundle(ref.owner, ref.repo)
+    async def analyze_by_coordinates(self, owner: str, repo: str) -> RepositoryAnalysisResponse:
+        return await self._build_response(owner, repo, f"https://github.com/{owner}/{repo}")
+
+    async def _build_response(self, owner: str, repo: str, github_url: str) -> RepositoryAnalysisResponse:
+        bundle = await self.github.fetch_repository_bundle(owner, repo)
         repository_summary = self._repository_summary(bundle["repository"], bundle["languages"])
         paths = [item.get("path", "") for item in bundle.get("tree", []) if item.get("path")]
         technologies = self.tech.detect(bundle["languages"], paths, bundle.get("important_files", {}))
@@ -61,93 +52,24 @@ class RepositoryAnalysisService:
             "pull_requests": [self._pull_summary(item).model_dump(mode="json") for item in bundle.get("pulls", [])[:20]],
         }
         overview = await self.openai.generate_overview(facts)
-
-        repository = self.repository_repo.upsert(
-            db,
-            owner=repository_summary.owner,
-            name=repository_summary.name,
-            github_url=repository_summary.github_url,
-            description=repository_summary.description,
-            default_branch=repository_summary.default_branch,
-            metadata=repository_summary.model_dump(mode="json"),
-        )
         analyzed_at = datetime.now(timezone.utc)
-        expires_at = analyzed_at + timedelta(seconds=self.settings.analysis_cache_ttl_seconds)
-        analysis = RepositoryAnalysis(
-            repository_id=repository.id,
-            metrics_json=metrics.model_dump(mode="json"),
-            ai_overview_json=overview.model_dump(mode="json"),
-            raw_data_json=self._raw_payload(bundle, repository_summary, technologies),
-            analyzed_at=analyzed_at,
-            expires_at=expires_at,
-        )
-        db.add(analysis)
-        db.query(RepositoryFileChunk).filter(RepositoryFileChunk.repository_id == repository.id).delete()
-        await self._index_chunks(db, repository.id, bundle)
-        db.commit()
-        db.refresh(analysis)
-        return self._response_from_analysis(analysis, cached=False)
 
-    def get_analysis(self, db: Session, owner: str, repo: str) -> RepositoryAnalysisResponse | None:
-        repository = self.repository_repo.get_by_owner_name(db, owner, repo)
-        if repository is None:
-            return None
-        analysis = self.analysis_repo.get_latest(db, repository.id)
-        if analysis is None:
-            return None
-        return self._response_from_analysis(analysis, cached=False)
-
-    async def _index_chunks(self, db: Session, repository_id: int, bundle: dict[str, Any]) -> None:
-        files: dict[str, str] = {}
-        if bundle.get("readme"):
-            files["README.md"] = bundle["readme"]
-        files.update(bundle.get("important_files", {}))
-        for path, content in files.items():
-            for chunk in chunk_text(content):
-                embedding = await self.embeddings.embed(chunk.content)
-                db.add(
-                    RepositoryFileChunk(
-                        repository_id=repository_id,
-                        path=path,
-                        start_line=chunk.start_line,
-                        end_line=chunk.end_line,
-                        content=chunk.content,
-                        embedding_json=embedding,
-                    )
-                )
-
-    def _raw_payload(self, bundle: dict[str, Any], repository: RepositorySummary, technologies: Any) -> dict[str, Any]:
-        return {
-            "repository": repository.model_dump(mode="json"),
-            "recent_commits": [self._commit_summary(item).model_dump(mode="json") for item in bundle.get("commits", [])[:50]],
-            "contributors": [self._contributor_summary(item).model_dump(mode="json") for item in bundle.get("contributors", [])[:50]],
-            "open_issues": [self._issue_summary(item).model_dump(mode="json") for item in bundle.get("issues", [])[:50]],
-            "open_pull_requests": [self._pull_summary(item).model_dump(mode="json") for item in bundle.get("pulls", [])[:50]],
-            "releases": [self._release_summary(item).model_dump(mode="json") for item in bundle.get("releases", [])[:20]],
-            "tree": [self._file_summary(item).model_dump(mode="json") for item in bundle.get("tree", [])[:500]],
-            "readme": bundle.get("readme"),
-            "important_files": bundle.get("important_files", {}),
-            "technologies": technologies.model_dump(mode="json"),
-        }
-
-    def _response_from_analysis(self, analysis: RepositoryAnalysis, cached: bool) -> RepositoryAnalysisResponse:
-        raw = analysis.raw_data_json
         return RepositoryAnalysisResponse(
-            repository=RepositorySummary.model_validate(raw["repository"]),
-            metrics=analysis.metrics_json,
-            ai_overview=analysis.ai_overview_json,
-            recent_commits=raw.get("recent_commits", []),
-            contributors=raw.get("contributors", []),
-            open_issues=raw.get("open_issues", []),
-            open_pull_requests=raw.get("open_pull_requests", []),
-            releases=raw.get("releases", []),
-            tree=raw.get("tree", []),
-            readme=raw.get("readme"),
-            important_files=raw.get("important_files", {}),
-            technologies=raw.get("technologies", {}),
-            analyzed_at=analysis.analyzed_at,
-            expires_at=analysis.expires_at,
-            cached=cached,
+            repository=repository_summary.model_copy(update={"github_url": github_url}),
+            metrics=metrics,
+            ai_overview=overview,
+            recent_commits=[self._commit_summary(item) for item in bundle.get("commits", [])[:50]],
+            contributors=[self._contributor_summary(item) for item in bundle.get("contributors", [])[:50]],
+            open_issues=[self._issue_summary(item) for item in bundle.get("issues", [])[:50]],
+            open_pull_requests=[self._pull_summary(item) for item in bundle.get("pulls", [])[:50]],
+            releases=[self._release_summary(item) for item in bundle.get("releases", [])[:20]],
+            tree=[self._file_summary(item) for item in bundle.get("tree", [])[:500]],
+            readme=bundle.get("readme"),
+            important_files=bundle.get("important_files", {}),
+            technologies=technologies,
+            analyzed_at=analyzed_at,
+            expires_at=analyzed_at,
+            cached=False,
         )
 
     def _repository_summary(self, data: dict[str, Any], languages: dict[str, int]) -> RepositorySummary:
