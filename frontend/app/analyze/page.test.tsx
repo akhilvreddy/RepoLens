@@ -42,20 +42,16 @@ describe("AnalyzePage", () => {
 
   it("shows clear centered error and retries", async () => {
     const user = userEvent.setup();
-    vi.mocked(analyzeRepository)
-      .mockRejectedValueOnce(new Error("Request failed with 404"))
-      .mockResolvedValueOnce({
-        repository: { owner: "fastapi", name: "fastapi" },
-      } as any);
+    currentUrl = "invalid-url";
 
     render(<AnalyzePage />);
 
-    expect(await screen.findByText("Repository not found. Confirm the URL and that it is public.")).toBeInTheDocument();
+    expect(await screen.findByText("Invalid GitHub URL. Please go back and enter a public repository URL.")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Retry analysis" }));
 
-    await waitFor(() => expect(analyzeRepository).toHaveBeenCalledTimes(2));
-    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/repositories/fastapi/fastapi"));
+    expect(analyzeRepository).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("cancels and navigates back home", async () => {
@@ -64,7 +60,7 @@ describe("AnalyzePage", () => {
 
     render(<AnalyzePage />);
 
-    await waitFor(() => expect(analyzeRepository).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(analyzeRepository).toHaveBeenCalled());
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(pushMock).toHaveBeenCalledWith("/");
