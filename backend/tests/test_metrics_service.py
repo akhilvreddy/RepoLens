@@ -131,7 +131,7 @@ def test_new_activity_without_baseline_is_full_momentum() -> None:
 
 def test_stale_concentrated_repo_is_marked_risk() -> None:
     bundle = {
-        "commits": [_commit(40, "solo")],
+        "commits": [_commit(70, "solo")],
         "contributors": [
             {"login": "solo", "contributions": 90},
             {"login": "other", "contributions": 10},
