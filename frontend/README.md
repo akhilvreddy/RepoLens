@@ -14,11 +14,13 @@ npm run dev
 ## Main Routes
 
 - `/` — input form and repository examples.
+- `/analyze` — transition/loading screen while repository analysis runs.
 - `/repositories/[owner]/[repo]` — dashboard for a single repository.
 
 ## Features in the current scaffold
 
 - polished landing with validation and suggested inputs,
+- dedicated transition loading screen with retry/cancel controls,
 - repository header and KPI cards,
 - commit and language visualizations via Recharts,
 - AI overview panel,
