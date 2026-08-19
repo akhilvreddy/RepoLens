@@ -1,6 +1,7 @@
 /.venv/
-/backend/__pycache__/
-/backend/*.pyc
+/backend/.venv/
+__pycache__/
+*.pyc
 /backend/repolens.db
 /backend/.pytest_cache/
 /backend/.ruff_cache/
