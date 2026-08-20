@@ -35,3 +35,8 @@ npm run dev
 - Tailwind CSS
 - Lucide icons
 - Recharts
+
+## Deployment
+
+GitHub Actions includes Vercel deployment automation in `.github/workflows/vercel-deploy.yml`.
+Setup steps for required repository secrets are documented in `.github/VERCEL_SETUP.md`.
