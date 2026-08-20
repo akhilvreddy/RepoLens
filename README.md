@@ -8,7 +8,7 @@ RepoLens helps engineers and teams evaluate unfamiliar codebases quickly. It:
 - fetches repository facts from GitHub,
 - computes deterministic engineering metrics,
 - generates a structured AI overview,
-- stores analysis in SQLite for reuse,
+- runs analysis and retrieval statelessly per request,
 - provides grounded Q&A against repo content.
 
 ## One-line architecture
@@ -21,16 +21,15 @@ flowchart TD
     B --> M[Metrics Engine]
     B --> O[OpenAI Service]
     B --> R[Retrieval Service]
-    B --> D[(SQLite)]
     G --> B
-    M --> D
-    R --> D
+    M --> B
+    R --> B
     O --> B
 ```
 
 ## Structure
 
-- `backend/` — FastAPI service, SQLAlchemy models, metrics/chat/overview services.
+- `backend/` — FastAPI service, stateless metrics/chat/overview services.
 - `frontend/` — Next.js application and dashboard UI.
 - `docker-compose.yml` — local local-compose stack for backend + frontend.
 
