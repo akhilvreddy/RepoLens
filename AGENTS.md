@@ -2,7 +2,7 @@
 
 RepoLens is an AI-powered GitHub repository intelligence tool. It has two services:
 
-- `backend/` — FastAPI service (Python 3.12) that fetches GitHub data, computes deterministic metrics, and serves AI overview/chat. Uses SQLite (`backend/repolens.db`, auto-created on startup).
+- `backend/` — FastAPI service (Python 3.12) that fetches GitHub data, computes deterministic metrics, and serves AI overview/chat. Stateless per request (no database or chat persistence).
 - `frontend/` — Next.js (App Router, TypeScript, Tailwind) dashboard UI.
 
 Standard setup/run/test commands live in `README.md`, `backend/README.md`, and `frontend/README.md`, and in `frontend/package.json` scripts. Prefer those as the source of truth.
@@ -19,5 +19,5 @@ Running the services (do NOT put these in the update script; start them manually
 Non-obvious notes:
 
 - No API keys are required to run or demo. `GITHUB_TOKEN` and `OPENAI_API_KEY` are optional; without a GitHub token you rely on unauthenticated GitHub rate limits (~60 req/hr), and without an OpenAI key the AI overview/chat use a deterministic fallback. Analyzing a repo (e.g. `https://github.com/octocat/Hello-World`) works fully end-to-end without either.
-- Tests: frontend uses Vitest — run `npm test -- --run` in `frontend/`. The backend has pytest configured (`backend/pyproject.toml`) but currently ships no test files, so `pytest` collects 0 tests (this is expected, not a failure).
+- Tests: frontend uses Vitest — run `npm test -- --run` in `frontend/`. Backend uses pytest — run `pytest` from `backend/` (pure unit tests under `backend/tests/`).
 - Lint: `npm run lint` is currently broken because the repo pins `next` to `latest` (resolves to Next.js 16), which removed the `next lint` command, and there is no standalone ESLint flat config in the repo. Do not rely on `npm run lint` until an ESLint config is added.
