@@ -31,7 +31,7 @@ flowchart TD
 
 - `backend/` — FastAPI service, stateless metrics/chat/overview services.
 - `frontend/` — Next.js application and dashboard UI.
-- `docker-compose.yml` — local local-compose stack for backend + frontend.
+- `docker-compose.yml` — local Docker Compose stack for backend + frontend.
 
 ## Quick setup
 
