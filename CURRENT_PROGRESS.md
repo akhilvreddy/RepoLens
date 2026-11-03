@@ -29,7 +29,7 @@ Current status (as built in this round):
 - docker-compose with backend/frontend services
 - backend/frontend Dockerfiles
 - .env examples
-- backend/front-end/readme and root readme
+- backend, frontend, and root README files
 - root progress note for handoff
 
 4) Outstanding to finish before stable release
